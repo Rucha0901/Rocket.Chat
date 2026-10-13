@@ -65,7 +65,8 @@ real JIDs remote rooms disclose before they become usernames. `createOrUpdateXMP
 
 ## Out of scope
 
-- PRECIS profiles for localparts and resources (RFC 7622), see
+- PRECIS profiles for localparts and structural validation of localparts and resources
+  (RFC 7622), wanted by [accreditation-readiness](../intents/accreditation-readiness.md); see
   [ADR 0011](../adr/0011-domain-normalization-is-idna-and-lowercase.md).
 - Resource handling for local users: local users have no resource on the wire except in
   remote rooms (R7).
