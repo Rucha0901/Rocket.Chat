@@ -1,6 +1,6 @@
 # Intent: Recovery after an interrupted federation link
 
-Author: Diego Sampaio. Status: draft.
+Author: Diego Sampaio. Status: accepted.
 
 ## Problem
 

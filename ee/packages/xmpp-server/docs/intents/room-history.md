@@ -1,6 +1,6 @@
 # Intent: History for remote occupants of hosted rooms
 
-Author: Diego Sampaio. Status: draft.
+Author: Diego Sampaio. Status: accepted.
 
 ## Problem
 

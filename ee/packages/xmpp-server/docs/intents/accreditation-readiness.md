@@ -1,6 +1,6 @@
 # Intent: Accreditation readiness and air-gapped operation
 
-Author: Diego Sampaio. Status: draft.
+Author: Diego Sampaio. Status: accepted.
 
 ## Problem
 
