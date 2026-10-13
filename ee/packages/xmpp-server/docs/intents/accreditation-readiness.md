@@ -16,7 +16,7 @@ and several defaults work against a security review:
 - certificate trust is Node's default CA store, so a private PKI is only trusted through
   `NODE_EXTRA_CA_CERTS`;
 - a peer certificate names its domain through dNSName entries only, or through the subject
-  CN when it has none ([ADR 0005](../adr/0005-peer-certificates-are-matched-on-dnsname-only.md)):
+  CN when it has none ([ADR 0005](../adr/0005-peer-certificates-name-a-domain-by-dnsname-srvname-or-xmppaddr.md)):
   the XmppAddr and SRVName names of RFC 6120 §13.7.1.2 are ignored, and a CN that RFC 9525
   no longer recognises is accepted;
 - inbound localparts and resources are not validated, so a malformed JID can become a
@@ -88,7 +88,7 @@ and several defaults work against a security review:
 - **Q4** ~~What does "security review closure" in S2 cover, and who runs the review?~~ See
   Proposed outcome.
 - **Q5** ~~Should XmppAddr names in certificates be honoured for the defense PKIs that issue
-  them ([ADR 0005](../adr/0005-peer-certificates-are-matched-on-dnsname-only.md))?~~ Yes,
+  them ([ADR 0005](../adr/0005-peer-certificates-name-a-domain-by-dnsname-srvname-or-xmppaddr.md))?~~ Yes,
   with SRVName, and without the CN: see Proposed outcome. Under fail-closed an unmatched
   name refuses the peer instead of falling back to dialback, and Node already exposes both
   names, which removes the cost ADR 0005 rejected them for.

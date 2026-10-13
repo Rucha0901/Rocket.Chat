@@ -115,7 +115,8 @@ The dialback secret is generated at start and never persisted
 - Stream management (XEP-0198): no acknowledgements, no resumption. Pending triage in
   [compliance.md](../compliance.md).
 - Serving more than one domain: the server is exactly one domain plus its MUC subdomain.
-- XmppAddr and SRVName certificate names ([ADR 0005](../adr/0005-peer-certificates-are-matched-on-dnsname-only.md)).
+- XmppAddr and SRVName certificate names, and refusing the subject CN, wanted by
+  [accreditation-readiness](../intents/accreditation-readiness.md) ([ADR 0005](../adr/0005-peer-certificates-name-a-domain-by-dnsname-srvname-or-xmppaddr.md)).
 - A deny list exists in the core config but has no setting ([configuration-and-lifecycle](configuration-and-lifecycle.md)).
 
 ## Known defects
@@ -135,5 +136,5 @@ None pinned by a test.
 - RFC 6120 §4 (streams), §5 (STARTTLS), §6 (SASL), §8.3 (stanza errors), §11.1 (restricted XML)
 - RFC 2782, XEP-0220, XEP-0185
 - [ADR 0004](../adr/0004-starttls-required-sasl-external-preferred-dialback-fallback.md),
-  [ADR 0005](../adr/0005-peer-certificates-are-matched-on-dnsname-only.md),
+  [ADR 0005](../adr/0005-peer-certificates-name-a-domain-by-dnsname-srvname-or-xmppaddr.md),
   [ADR 0011](../adr/0011-domain-normalization-is-idna-and-lowercase.md)

@@ -73,7 +73,7 @@ cannot be expressed over a fire-and-forget emitter.
 | `src/stream/OutboundSession.ts` | Originating-server state machine (resolve, connect, STARTTLS, SASL EXTERNAL or dialback, ready), plus a one-shot `verifyDialback` mode |
 | `src/s2s/S2SManager.ts` | The hub. TCP listener, per-domain routes `{outbound session, bounded queue, backoff}`, `sendStanza(el)` routed by `to` domain, idle route reaping, and dialback verification by dialling the claimed domain |
 | `src/s2s/dialback.ts` | XEP-0185 key derivation (`HMAC-SHA256(SHA256(secret), "recv orig streamId")`), constant-time verification, stream ids |
-| `src/s2s/saslExternal.ts` | Peer certificate for domain: `socket.authorized` plus a dNSName match through Node's `checkServerIdentity`. XmppAddr and SRVName otherName entries are not evaluated ([ADR 0005](adr/0005-peer-certificates-are-matched-on-dnsname-only.md)) |
+| `src/s2s/saslExternal.ts` | Peer certificate for domain: `socket.authorized` plus a dNSName match through Node's `checkServerIdentity`. XmppAddr and SRVName otherName entries are not evaluated yet, and the CN still matches when there is no dNSName ([ADR 0005](adr/0005-peer-certificates-name-a-domain-by-dnsname-srvname-or-xmppaddr.md)) |
 | `src/s2s/dnsResolver.ts` | `_xmpp-server._tcp` SRV with RFC 2782 ordering, A/AAAA on 5269 fallback, the `.` target convention. Injectable |
 | `src/s2s/backoff.ts` | Exponential backoff with full jitter, 1 s to 5 min |
 | `src/router/StanzaRouter.ts` | Dispatch of authenticated stanzas: MUC-addressed traffic to `MucService`, `message` and `presence` to typed events, IQ ping and disco to auto-replies, any other IQ get or set to `service-unavailable` |
