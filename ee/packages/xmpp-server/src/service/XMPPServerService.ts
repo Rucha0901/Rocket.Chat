@@ -138,9 +138,7 @@ export class XMPPServerService extends ServiceClass implements IXMPPServerServic
 		this.forwardToRocketChat = forwardToRocketChat;
 		this.observeHandler = observeHandler;
 		this.resolver = resolver;
-	}
 
-	override async created(): Promise<void> {
 		// Outbound presence: fan a local user's status out to the remote domains they share a DM with.
 		this.onEvent('presence.status', async ({ user }): Promise<void> => {
 			if (!this.server || !this.presenceEnabled || !user.username || isUserXMPPFederated(user)) {
