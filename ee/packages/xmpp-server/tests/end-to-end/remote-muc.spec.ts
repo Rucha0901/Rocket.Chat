@@ -127,6 +127,10 @@ describe('XMPP federation: rooms hosted by the XMPP server', () => {
 			await alice.waitFor(isGroupchat({ roomJid, nick: a.username, body: outbound }), 'the Rocket.Chat message');
 		});
 
+		it('makes the author of a stored message a member of the mirrored room (R12)', async () => {
+			assert.ok((await listMemberUsernames(a, shadow)).includes(`${alice.username}#${roomJid}`));
+		});
+
 		it('applies a correction from an occupant to the stored message (message-corrections R4)', async () => {
 			const id = `e2e-${uniqueSuffix()}`;
 			const text = `before correction ${uniqueSuffix()}`;

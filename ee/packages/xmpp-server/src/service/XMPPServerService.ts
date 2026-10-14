@@ -702,7 +702,7 @@ export class XMPPServerService extends ServiceClass implements IXMPPServerServic
 		occupantId,
 		replaceId,
 	}: XMPPServerEventMap['muc.remoteMessage']): Promise<void> {
-		const room = await Rooms.findOneByXMPPMucJid(roomJid, { projection: { _id: 1 } });
+		const room = await Rooms.findOneByXMPPMucJid(roomJid);
 		if (!room) {
 			return;
 		}
@@ -714,6 +714,7 @@ export class XMPPServerService extends ServiceClass implements IXMPPServerServic
 		}
 		// Without a real JID nothing ties the nick to the same person in another room
 		const author = await createOrUpdateXMPPUser({ jid: fromJid ?? `${fromNick}#${roomJid}`, name: fromNick });
+		await this.ensureRemoteRoomMember(room, author);
 		await this.receiveMessage({
 			rid: room._id,
 			author,
@@ -725,6 +726,23 @@ export class XMPPServerService extends ServiceClass implements IXMPPServerServic
 			senderId,
 			replaceId,
 		});
+	}
+
+	/** Makes the author of a remote room's message a member of its mirror, however many copies of their messages arrive at once. */
+	private async ensureRemoteRoomMember(room: IRoom, author: IUser): Promise<void> {
+		const isMember = async () => !!(await Subscriptions.findOneByRoomIdAndUserId(room._id, author._id, { projection: { _id: 1 } }));
+		if (await isMember()) {
+			return;
+		}
+		try {
+			// Bypasses addUserToRoom on purpose: its hooks would open a session in the room for the remote user
+			await Room.createUserSubscription({ room, ts: new Date(), userToBeAdded: author, skipSystemMessage: true });
+		} catch (err) {
+			// A concurrent copy created it first
+			if (!(await isMember())) {
+				throw err;
+			}
+		}
 	}
 
 	/** Stores an inbound message, or applies it to the one it corrects, once however many copies arrive and however close together. */

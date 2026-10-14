@@ -100,6 +100,10 @@ network already uses. Entry is by invitation only ([ADR 0008](../adr/0008-only-d
   `muc.remoteJoined` (with the roster), `muc.remoteOccupantJoined` and
   `muc.remoteOccupantLeft`. These are counted by the service and have no effect on the
   mirrored channel's membership.
+- **R12** The author of a message stored under R6 becomes a member of the mirrored channel
+  when they are not one already, without a system message and without a session of their
+  own (R3 applies to local members only). They stay a member: leaving the remote room does
+  not remove them.
 
 ## Design
 
@@ -112,12 +116,18 @@ nick up in every session it holds for that room, so a moderator session's view s
 others, and puts the normalized bare JID in `muc.remoteMessage` as `fromJid`, leaving out
 JIDs on its own domains (R6). The service creates the shadow room on invite, joins and
 leaves on membership hooks, rejoins on start, and persists `muc.remoteMessage`, upserting
-the author from `fromJid` or the per-room key.
+the author from `fromJid` or the per-room key and subscribing them to the channel first,
+since Rocket.Chat only stores a message in a private group from a member. Copies delivered
+by several sessions race to subscribe the same author; the loser finds the subscription
+the winner created (R12).
 
 ## Out of scope
 
 - Joining or searching a remote room from the Rocket.Chat UI; bookmarks (XEP-0048, XEP-0402).
-- Showing remote occupants as members of the mirrored channel (R11 counts only).
+- Mirroring who is in the remote room (occupants, XEP-0045 §4.1) or the room's member list
+  (affiliations, §5.2) into the mirrored channel's membership. Occupancy changes with every
+  client disconnect, and the member list is an admin request (§9.5) that semi-anonymous
+  rooms SHOULD NOT answer for members. Members are the authors seen (R12).
 - Affiliations, roles, moderation, subject changes, room configuration on the remote room.
 - Nick conflicts: the nick is the username; a conflict is a failed join (R5).
 - Linking a person across semi-anonymous rooms. Nothing the room sends a participant
@@ -144,8 +154,8 @@ Defects that show in remote rooms but are owned elsewhere:
 - **Q1** Should a remote room that is public and open (disco#info `muc_public` and
   `muc_open`) be mirrored as a public channel, the way Matrix maps join rules, following
   later configuration changes (status 104)?
-- **Q2** Should remote occupants become members of the mirrored channel, so the member list
-  is truthful, or stay as authors only?
+- **Q2** ~~Should remote occupants become members of the mirrored channel, so the member list
+  is truthful, or stay as authors only?~~ Authors become members: R12.
 - **Q3** ~~When the remote room drops a session (room destroyed, kick, server restart), should
   the service rejoin, and after how long?~~ A lost session is rejoined with the route backoff;
   a kick, ban, removal or destroy is not, and a destroy deletes the channel:
