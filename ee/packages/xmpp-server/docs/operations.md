@@ -176,14 +176,6 @@ Inbound handling has no queue and no concurrency limit: handlers start as stanza
 never throttle the socket. An overloaded service accepts everything and falls behind silently;
 what grows is `inflight`, not refused traffic.
 
-### Load testing
-
-`yarn workspace @rocket.chat/xmpp-server-service loadtest` starts fake remote XMPP servers on
-local ports and drives DM, presence, MUC or mixed traffic at a running service, either on a
-ramp or at maximum rate, and writes a report. `loadtest overrides` prints the
-`XMPP_DNS_OVERRIDES` value to start the service with, and `loadtest --help` prints every
-option. A full run is walked through in [architecture.md](architecture.md#load-testing).
-
 ## Configuration on the XMPP side
 
 Usually **none**: this is standard XMPP federation, and public XMPP servers federate with
