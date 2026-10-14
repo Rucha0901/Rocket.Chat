@@ -7,10 +7,10 @@ import type { IMessage, IRoom } from '@rocket.chat/core-typings';
 import type { Cleanup } from './cleanup';
 import { config, polling, uniqueSuffix } from './config';
 import { api, apiUrl } from '../../../../../../apps/meteor/tests/data/api-data';
-import { sendMessage as sendMessageViaMethod } from '../../../../../../apps/meteor/tests/data/messages.helper';
+import { sendMessage as sendMessageViaRest } from '../../../../../../apps/meteor/tests/data/messages.helper';
 import { createRoom, getRoomInfo, getRoomMembers } from '../../../../../../apps/meteor/tests/data/rooms.helper';
 import { adminPassword, adminUsername, password } from '../../../../../../apps/meteor/tests/data/user';
-import { createUser, deleteUser, getRequestConfig, getUserByUsername } from '../../../../../../apps/meteor/tests/data/users.helper';
+import { createUser, deleteUser, findUserByUsername, getRequestConfig } from '../../../../../../apps/meteor/tests/data/users.helper';
 import type { IRequestConfig } from '../../../../../../apps/meteor/tests/data/users.helper';
 import { retry } from '../../../../../../apps/meteor/tests/end-to-end/api/helpers/retry';
 import { DDPListener } from '../../../../federation-matrix/tests/helper/ddp-listener';
@@ -128,7 +128,7 @@ export async function connectSession(rc: RocketChat, user: LocalUser): Promise<v
 	await session.connect();
 }
 
-export const findUser = (rc: RocketChat, username: string) => getUserByUsername(username, rc.admin);
+export const findUser = (rc: RocketChat, username: string) => findUserByUsername(username, rc.admin);
 
 /** Deletes, on cleanup, the local record Rocket.Chat materializes for a remote JID. */
 export function forgetRemoteUserOnCleanup(rc: RocketChat, username: string): void {
@@ -212,15 +212,10 @@ export async function expectStoredOnce(user: LocalUser, room: RoomRef, text: str
 	return copies[0];
 }
 
-/** Sends through the same method the web client uses, so every message hook runs. */
+/** Sends as a Rocket.Chat user does, so every message hook runs. */
 export async function sendMessage(user: LocalUser, roomId: string, msg: string): Promise<IMessage> {
-	const res = await sendMessageViaMethod({ rid: roomId, msg, config: user.config });
-	const { result, error } = JSON.parse(expectSuccess<{ message: string }>('sendMessage', res).message) as {
-		result?: IMessage;
-		error?: unknown;
-	};
-	assert.ok(result, `sendMessage failed: ${JSON.stringify(error)}`);
-	return result;
+	const res = await sendMessageViaRest({ rid: roomId, msg, config: user.config });
+	return res.body.message;
 }
 
 export async function updateMessage(user: LocalUser, roomId: string, msgId: string, text: string): Promise<void> {
