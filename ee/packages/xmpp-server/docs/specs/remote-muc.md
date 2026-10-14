@@ -58,7 +58,10 @@ network already uses. Entry is by invitation only ([ADR 0008](../adr/0008-only-d
   - is stamped `xmppFederation: { role: 'remote-muc', muc: <room JID>, origin: <room domain> }`.
 
   An invitation into a MUC that is already mirrored, in any spelling of its JID, adds the
-  invitee as a member of the existing channel.
+  invitee as a member of the existing channel. Invitations into one MUC that arrive together
+  leave one channel, with each invitee a member once: invitations for several local users,
+  and the second invitation Openfire sends when the inviter grants membership before
+  inviting.
 - **R2** The invitee is then joined into the remote room with their own session: occupant
   JID `<username>@<domain>/rocketchat`, nick `<username>`
   ([ADR 0009](../adr/0009-one-remote-muc-session-per-local-member.md)).

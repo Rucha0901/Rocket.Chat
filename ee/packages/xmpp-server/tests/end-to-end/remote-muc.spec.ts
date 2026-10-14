@@ -166,6 +166,32 @@ describe('XMPP federation: rooms hosted by the XMPP server', () => {
 		});
 	});
 
+	describe('when invitations into a new room arrive together', () => {
+		let a: LocalUser;
+		let b: LocalUser;
+		let roomJid: string;
+		let shadowName: string;
+
+		before(async () => {
+			[a, b] = [await createLocalUser(rc, 'ta'), await createLocalUser(rc, 'tb')];
+			({ roomJid, shadowName } = await openRoom({ archive: false }));
+		});
+
+		it('mirrors the room once, with every invitee a member (R1)', async () => {
+			await Promise.all([inviteFromXmpp(roomJid, a), inviteFromXmpp(roomJid, b)]);
+			const shadow = await waitForShadowRoom(shadowName, roomJid, a);
+			await Promise.all([waitForOccupant(roomJid, a), waitForOccupant(roomJid, b)]);
+			await retry(
+				'both invitees to be members of the shadow room',
+				async () => {
+					const members = await listMemberUsernames(a, shadow);
+					assert.ok(members.includes(a.username) && members.includes(b.username), `members: ${members.join(', ')}`);
+				},
+				polling,
+			);
+		});
+	});
+
 	describe('in rooms that disclose real JIDs', () => {
 		let a: LocalUser;
 		let rooms: { roomJid: string; shadow: IRoom; nick: string }[];

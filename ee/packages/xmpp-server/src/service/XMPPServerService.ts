@@ -123,6 +123,9 @@ export class XMPPServerService extends ServiceClass implements IXMPPServerServic
 	/** Event ids of inbound messages whose storage is under way. */
 	private readonly eventIdsBeingSaved = new Set<string>();
 
+	/** The latest invitation being handled for each remote room, by room JID. */
+	private readonly invitesInProgress = new Map<string, Promise<void>>();
+
 	private server: XMPPServer | undefined;
 
 	private fingerprint: ListenerFingerprint | undefined;
@@ -621,7 +624,7 @@ export class XMPPServerService extends ServiceClass implements IXMPPServerServic
 		});
 
 		server.on('muc.inviteReceived', (event) => {
-			this.track('muc.inviteReceived', this.onMucInvite(event), 'Failed to handle MUC invite');
+			this.track('muc.inviteReceived', this.handleInviteInTurn(event), 'Failed to handle MUC invite');
 		});
 	}
 
@@ -796,6 +799,20 @@ export class XMPPServerService extends ServiceClass implements IXMPPServerServic
 	/** Nothing until the secret is loaded: an id derived without it could be predicted, and would stay that way. */
 	private deriveMessageId(key: InboundMessageKey): string | undefined {
 		return this.messageIdSecret ? deriveInboundMessageId(this.messageIdSecret, key) : undefined;
+	}
+
+	/** Handles invitations to one room in turn, so a later one finds the room and membership an earlier one created. */
+	private handleInviteInTurn(event: XMPPServerEventMap['muc.inviteReceived']): Promise<void> {
+		const previous = this.invitesInProgress.get(event.roomJid) ?? Promise.resolve();
+		const current = previous.catch(() => undefined).then(() => this.onMucInvite(event));
+		this.invitesInProgress.set(event.roomJid, current);
+		const forget = () => {
+			if (this.invitesInProgress.get(event.roomJid) === current) {
+				this.invitesInProgress.delete(event.roomJid);
+			}
+		};
+		current.then(forget, forget);
+		return current;
 	}
 
 	/** Makes the invited local user a member of the remote MUC's shadow room, creating it on first invite, and joins them into the MUC. */
