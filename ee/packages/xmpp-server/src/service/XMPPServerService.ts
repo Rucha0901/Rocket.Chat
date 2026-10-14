@@ -388,7 +388,7 @@ export class XMPPServerService extends ServiceClass implements IXMPPServerServic
 
 	/** MUC state in the core is ephemeral: rebuild the hosted-room registry from the database. */
 	private async registerHostedRooms(): Promise<void> {
-		const rooms = await Rooms.find({ 'xmppFederation.role': 'host-muc' }, { projection: HOSTED_ROOM_PROJECTION }).toArray();
+		const rooms = await Rooms.findByXMPPRole('host-muc', { projection: HOSTED_ROOM_PROJECTION }).toArray();
 		for (const room of rooms) {
 			this.registerHostedRoomWithCore(room);
 			await this.registerLocalOccupants(room);
@@ -463,7 +463,7 @@ export class XMPPServerService extends ServiceClass implements IXMPPServerServic
 	 * this every member would go silent after a restart, and only the invitee could ever talk.
 	 */
 	private async joinRemoteMucRooms(): Promise<void> {
-		const rooms = await Rooms.find({ 'xmppFederation.role': 'remote-muc' }, { projection: { _id: 1, xmppFederation: 1 } }).toArray();
+		const rooms = await Rooms.findByXMPPRole('remote-muc', { projection: { _id: 1, xmppFederation: 1 } }).toArray();
 
 		for (const room of rooms) {
 			if (!isRoomXMPPRemoteMuc(room)) {
@@ -503,10 +503,7 @@ export class XMPPServerService extends ServiceClass implements IXMPPServerServic
 
 		const room = await Rooms.findOneById(rid, { projection: { xmppFederation: 1 } });
 		if (room && !isRoomXMPPFederated(room)) {
-			await Rooms.updateOne(
-				{ _id: rid },
-				{ $set: { xmppFederation: { version: 1, role: 'dm', with: remoteJid, origin: domainOfJid(remoteJid) } } },
-			);
+			await Rooms.setXMPPFederationById(rid, { version: 1, role: 'dm', with: remoteJid, origin: domainOfJid(remoteJid) });
 		}
 
 		await this.receiveMessage({
@@ -561,7 +558,7 @@ export class XMPPServerService extends ServiceClass implements IXMPPServerServic
 	 */
 	private async authorizeMucJoin(mucDomain: string, params: { roomId: string; occupantJid: string }): Promise<MucJoinDecision> {
 		const mucJid = `${params.roomId}@${mucDomain}`;
-		const room = await Rooms.findOne({ 'xmppFederation.muc': mucJid }, { projection: { _id: 1, t: 1 } });
+		const room = await Rooms.findOneByXMPPMucJid(mucJid, { projection: { _id: 1, t: 1 } });
 		if (!room) {
 			this.logger.warn({ msg: 'MUC join refused: no room hosts this JID', muc: mucJid, from: params.occupantJid });
 			return { allow: false, reason: 'forbidden' };
@@ -647,7 +644,7 @@ export class XMPPServerService extends ServiceClass implements IXMPPServerServic
 	 * subscription so they show up in the members list. Invited users already have one.
 	 */
 	private async onHostedOccupantJoined(mucJid: string, occupantJid: string, nick: string): Promise<void> {
-		const room = await Rooms.findOne({ 'xmppFederation.muc': mucJid });
+		const room = await Rooms.findOneByXMPPMucJid(mucJid);
 		if (!room) {
 			return;
 		}
@@ -663,7 +660,7 @@ export class XMPPServerService extends ServiceClass implements IXMPPServerServic
 	}
 
 	private async onHostedOccupantLeft(mucJid: string, occupantJid: string): Promise<void> {
-		const room = await Rooms.findOne({ 'xmppFederation.muc': mucJid });
+		const room = await Rooms.findOneByXMPPMucJid(mucJid);
 		const user = room && (await Users.findOneByUsername(toBareJid(occupantJid)));
 		if (!room || !user) {
 			return;
@@ -677,7 +674,7 @@ export class XMPPServerService extends ServiceClass implements IXMPPServerServic
 		mucJid: string,
 		{ fromJid, fromNick, body, id, replaceId }: XMPPServerEventMap['muc.messageReceived'],
 	): Promise<void> {
-		const room = await Rooms.findOne({ 'xmppFederation.muc': mucJid }, { projection: { _id: 1 } });
+		const room = await Rooms.findOneByXMPPMucJid(mucJid, { projection: { _id: 1 } });
 		if (!room) {
 			return;
 		}
@@ -707,7 +704,7 @@ export class XMPPServerService extends ServiceClass implements IXMPPServerServic
 		occupantId,
 		replaceId,
 	}: XMPPServerEventMap['muc.remoteMessage']): Promise<void> {
-		const room = await Rooms.findOne({ 'xmppFederation.muc': roomJid }, { projection: { _id: 1 } });
+		const room = await Rooms.findOneByXMPPMucJid(roomJid, { projection: { _id: 1 } });
 		if (!room) {
 			return;
 		}
@@ -798,7 +795,7 @@ export class XMPPServerService extends ServiceClass implements IXMPPServerServic
 
 		const inviter = await createOrUpdateXMPPUser({ jid: toBareJid(event.fromJid) });
 
-		let room = await Rooms.findOne({ 'xmppFederation.muc': event.roomJid }, { projection: { _id: 1, xmppFederation: 1 } });
+		let room = await Rooms.findOneByXMPPMucJid(event.roomJid, { projection: { _id: 1, xmppFederation: 1 } });
 		if (room) {
 			await Room.addUserToRoom(room._id, localUser, inviter);
 		} else {
@@ -826,7 +823,7 @@ export class XMPPServerService extends ServiceClass implements IXMPPServerServic
 		const from = `${user.username}@${this.server.domain}`;
 		const { availability, show } = mapStatusToPresence(user.status);
 
-		const rooms = await Rooms.find({ 'xmppFederation.role': 'dm', 'uids': user._id }, { projection: { xmppFederation: 1 } }).toArray();
+		const rooms = await Rooms.findXMPPDirectMessagesByUserId(user._id, { projection: { xmppFederation: 1 } }).toArray();
 
 		for (const room of rooms) {
 			const to = room.xmppFederation?.with;
@@ -847,7 +844,7 @@ export class XMPPServerService extends ServiceClass implements IXMPPServerServic
 		}
 
 		const status = mapPresenceToStatus(event);
-		await Users.updateOne({ _id: user._id }, { $set: { status, statusDefault: status } });
+		await Users.updateStatusAndStatusDefaultById(user._id, status);
 
 		void api.broadcast('presence.status', {
 			user: { ...user, status },
@@ -867,10 +864,7 @@ export class XMPPServerService extends ServiceClass implements IXMPPServerServic
 		const sharesDm =
 			localUser &&
 			remoteUser &&
-			(await Rooms.findOne(
-				{ 'xmppFederation.role': 'dm', 'xmppFederation.with': remoteJid, 'uids': localUser._id },
-				{ projection: { _id: 1 } },
-			));
+			(await Rooms.findOneXMPPDirectMessageByUserIdAndRemoteJid(localUser._id, remoteJid, { projection: { _id: 1 } }));
 
 		if (sharesDm) {
 			await this.server.sendSubscription({ from: event.to, to: event.from, type: 'subscribed' });

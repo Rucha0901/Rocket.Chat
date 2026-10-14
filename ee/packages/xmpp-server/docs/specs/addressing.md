@@ -61,7 +61,9 @@ localparts, and compare domains the way DNS does.
 and the dialback flow call it on every domain they compare. `src/service/helpers/jid.ts` has
 `toBareJid` and `domainOfJid` for the service, and `normalizeUserBareJid` normalizes the
 real JIDs remote rooms disclose before they become usernames. `createOrUpdateXMPPUser` in
-`src/service/helpers/xmppUser.ts` is the single upsert behind R9 and R10.
+`src/service/helpers/xmppUser.ts` is the single upsert behind R9 and R10: it reduces the JID
+to its bare form and hands it to `Users.upsertXMPPUser` in `packages/models`, which stores the
+record and decides which name survives.
 
 ## Out of scope
 

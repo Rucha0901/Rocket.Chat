@@ -1,10 +1,10 @@
 import { domainOfJid, toBareJid } from './jid';
 import { createOrUpdateXMPPUser } from './xmppUser';
 
-const findOneAndUpdate = jest.fn();
+const upsertXMPPUser = jest.fn();
 
 jest.mock('@rocket.chat/models', () => ({
-	Users: { findOneAndUpdate: (...args: unknown[]) => findOneAndUpdate(...args) },
+	Users: { upsertXMPPUser: (...args: unknown[]) => upsertXMPPUser(...args) },
 }));
 
 describe('toBareJid', () => {
@@ -29,28 +29,18 @@ describe('domainOfJid', () => {
 
 describe('createOrUpdateXMPPUser (addressing R9, R10)', () => {
 	beforeEach(() => {
-		findOneAndUpdate.mockReset().mockResolvedValue({ _id: 'u1' });
+		upsertXMPPUser.mockReset().mockResolvedValue({ _id: 'u1' });
 	});
-
-	const lastUpdate = () => findOneAndUpdate.mock.calls[0][1];
 
 	it('keeps one record per bare JID, whatever the resource', async () => {
 		await createOrUpdateXMPPUser({ jid: 'alice@remote.tld/phone', name: 'ally' });
 
-		expect(findOneAndUpdate.mock.calls[0][0]).toEqual({ username: 'alice@remote.tld' });
+		expect(upsertXMPPUser).toHaveBeenCalledWith('alice@remote.tld', 'remote.tld', 'ally');
 	});
 
-	it('renames the user to the nick they were last seen under', async () => {
-		await createOrUpdateXMPPUser({ jid: 'alice@remote.tld', name: 'ally' });
-
-		expect(lastUpdate().$set.name).toBe('ally');
-		expect(lastUpdate().$setOnInsert).not.toHaveProperty('name');
-	});
-
-	it('names a new user by their JID and leaves an existing name alone when no nick is known', async () => {
+	it('hands no name over when no nick is known', async () => {
 		await createOrUpdateXMPPUser({ jid: 'alice@remote.tld' });
 
-		expect(lastUpdate().$set).not.toHaveProperty('name');
-		expect(lastUpdate().$setOnInsert.name).toBe('alice@remote.tld');
+		expect(upsertXMPPUser).toHaveBeenCalledWith('alice@remote.tld', 'remote.tld', undefined);
 	});
 });

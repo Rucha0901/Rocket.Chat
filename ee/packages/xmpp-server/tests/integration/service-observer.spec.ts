@@ -21,7 +21,7 @@ jest.mock('@rocket.chat/core-services', () => ({
 
 jest.mock('@rocket.chat/models', () => ({
 	Users: { findOneByUsername: (...args: unknown[]) => findOneByUsername(...args) },
-	Rooms: { find: () => ({ toArray: async () => [] }) },
+	Rooms: { findByXMPPRole: () => ({ toArray: async () => [] }) },
 	Subscriptions: {},
 	Messages: {},
 }));

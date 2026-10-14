@@ -84,7 +84,7 @@ status change to subscribed contacts".
 
 Suspected, not pinned by a test. The remote user upsert that runs on every inbound message
 sets `status: OFFLINE` unconditionally, which would undo any presence applied by R2 once D1
-is fixed. Where: `src/service/helpers/xmppUser.ts`.
+is fixed. Where: `Users.upsertXMPPUser` in `packages/models`, called by `src/service/helpers/xmppUser.ts`.
 
 ## Open questions
 
