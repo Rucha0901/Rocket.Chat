@@ -9,6 +9,7 @@ before changing behaviour.
 yarn testunit                       # jest: src/**/*.spec.ts and tests/integration
 yarn typecheck && yarn lint         # from this folder; never run the Meteor typecheck for this package
 yarn test:e2e                       # needs a running Rocket.Chat, xmpp-server-service and ejabberd; see docs/operations.md
+yarn test:e2e:stack                 # builds and starts Rocket.Chat + Openfire in Docker, then runs test:e2e against them
 node --import tsx --test --test-name-pattern='<name>' tests/end-to-end/<file>.spec.ts
 yarn workspace @rocket.chat/xmpp-server-service ms   # the only process that hosts the service
 ```

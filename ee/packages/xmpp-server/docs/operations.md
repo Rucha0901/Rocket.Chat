@@ -266,8 +266,8 @@ dropped ([remote-muc](specs/remote-muc.md), Out of scope).
 
 ## Running the end-to-end suite
 
-The suite in `tests/end-to-end/` runs against servers you already have; it sets none of them
-up and is not part of CI.
+The suite in `tests/end-to-end/` runs against servers you already have, or against the
+[Openfire stack](#the-openfire-stack), which sets them all up. It is not part of CI.
 
 What the servers need:
 
@@ -304,3 +304,39 @@ node --import tsx --test --test-force-exit --test-name-pattern='stores a message
 | `TEST_API_URL` | `http://localhost:3000`, the same variable as every other e2e suite |
 | `XMPP_E2E_RC_DDP_URL` | `TEST_API_URL`. With microservices, point it at the DDP streamer (for example `http://localhost:4000`): it owns websocket sessions, and presence depends on them |
 | `XMPP_E2E_SERVICE_URL` | `http://localhost:3039`. When it does not answer, the `/stats` checks are skipped |
+
+### The Openfire stack
+
+`docker-compose.test.yml` runs Rocket.Chat in microservices mode (with the authorization,
+presence and XMPP server services) and Openfire 5.1 in its default configuration, already
+federating with each other. `yarn test:e2e:stack` builds the images from the working tree,
+starts the stack, runs the suite against it and tears it down:
+
+```sh
+echo 'ENTERPRISE_LICENSE=<license with the federation module>' > ee/packages/xmpp-server/.env
+yarn workspace @rocket.chat/xmpp-server test:e2e:stack
+```
+
+| Option | Effect |
+| --- | --- |
+| `--image-tag <tag>` | Use the images CI published under that tag (`pr-12345`, `develop`) instead of building |
+| `--skip-build` | Reuse the images the previous run built |
+| `--no-test` | Start the stack and leave it running, to use it by hand |
+| `--keep-running` | Leave the stack running after the suite |
+| `--down` | Tear down a stack left running |
+| `-- <args>` | Pass `node --test` arguments instead of the whole suite, e.g. `-- --test-name-pattern='…' tests/end-to-end/remote-muc.spec.ts` |
+
+| | Rocket.Chat | Openfire |
+| --- | --- | --- |
+| XMPP domain | `rc.test` | `openfire.test` |
+| Reached at | `http://localhost:3000`, the test admin (`rocketchat.internal.admin.test`, same password) | `xmpp://localhost:5222`; admin console `http://localhost:9090` (`admin` / `admin`) |
+| Host port variable | `XMPP_STACK_RC_PORT` | `XMPP_STACK_OPENFIRE_C2S_PORT`, `XMPP_STACK_OPENFIRE_ADMIN_PORT` |
+
+The service's `/stats` is on `XMPP_STACK_SERVICE_PORT` (3039). The license is validated
+against `XMPP_STACK_ROOT_URL`, `http://rc.host` by default.
+
+Inside the stack each server's domain and `conference.` subdomain are network aliases, with
+no SRV records, so both sides reach each other on 5269. The `certs` container issues a private
+CA and both servers' certificates on the first start, into `docker-compose/certs/generated/`
+(gitignored, removed on teardown). Point an XMPP client on the host at that `ca.pem` to trust
+Openfire.
